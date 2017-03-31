@@ -84,4 +84,35 @@ class BranchSourcesContext extends AbstractExtensibleContext {
             }
         }
     }
+
+    /**
+     * Adds a BitBucket branch source. Can be called multiple times to add more branch sources.
+     *
+     * @since 1.46
+     */
+     @RequiresPlugin(id = 'cloudbees-bitbucket-branch-source', minimumVersion = '2.0.0')
+     void bitbucket(@DslContext(BitBucketBranchSourceContext) Closure branchSourceClosure) {
+        jobManagement.logPluginDeprecationWarning('cloudbees-bitbucket-branch-source', '2.0.0')
+
+        BitBucketBranchSourceContext context = new BitBucketBranchSourceContext(jobManagement)
+        ContextHelper.executeInContext(branchSourceClosure, context)
+
+        branchSourceNodes << new NodeBuilder().'jenkins.branch.BranchSource' {
+            source(class: 'com.cloudbees.jenkins.plugins.bitbucket.BitbucketSCMSource') {
+                id(UUID.randomUUID())
+                if (context.apiUri) {
+                apiUri(context.apiUri)
+                }
+                scanCredentialsId(context.scanCredentialsId ?: '')
+                checkoutCredentialsId(context.checkoutCredentialsId ?: '')
+                repoOwner(context.repoOwner ?: '')
+                repository(context.repository ?: '')
+                includes(context.includes ?: '')
+                excludes(context.excludes ?: '')
+                }
+            strategy(class: 'jenkins.branch.DefaultBranchPropertyStrategy') {
+                    properties(class: 'empty-list')
+            }
+        }
+     }
 }
